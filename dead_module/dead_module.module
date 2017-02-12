@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * 
+ * This module provides a block that lists all of the 
+ *  modules in database and  their files  are already deleted.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function dead_module_help($path, $arg) {
+  if ($path == 'admin/help#dead_module') {
+    return t('This module provides a block that lists all of the modules in database and their files are already deleted.');
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function dead_module_block_info() {
+  $blocks = array();
+  
+  $blocks['list_dead_modules'] = array(
+    'info' => t('A listing of all of the modules exists in database and their files deleted.'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  
+  return $blocks;
+}
+
+/**
+* get list of unused module
+*
+*/
+function listDeadModules(){
+  $result = db_query("SELECT * FROM {system}");
+  $items = array();
+  $list_dead_modules =  array();
+  foreach ($result as $record) {
+    $record->info = unserialize($record->info);
+    $items[$record->name] = $record;
+  }
+
+  foreach ($items as $item) {
+    if (!file_exists($item->filename)) {
+		$list_dead_modules[] = $item->filename;
+	}
+  }
+  return $list_dead_modules;
+
+}
+/**
+ * Implements hook_block_view().
+ */
+function dead_module_block_view($block_name = '') {
+  if ($block_name == 'list_dead_modules') {
+  
+    $list_dead_modules = listDeadModules();
+    
+    $theme_args = array('items' => $list_dead_modules, 'type' => 'ol');
+    $content = theme('item_list', $theme_args);
+    
+    $block = array(
+      'subject' => t('Dead Modules'),
+      'content' => $content,
+    );
+    
+    return $block;
+  }
+}
